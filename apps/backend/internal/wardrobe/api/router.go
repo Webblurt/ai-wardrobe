@@ -32,7 +32,7 @@ func (h *Handler) TryOn(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) TryOnSubroutes(w http.ResponseWriter, r *http.Request) {
-	path := strings.TrimPrefix(r.URL.Path, "/try-on/")
+	path := strings.TrimPrefix(r.URL.Path, "/api/v1/wardrobe/try-on/")
 	parts := strings.Split(strings.Trim(path, "/"), "/")
 
 	if len(parts) == 0 || parts[0] == "" {
