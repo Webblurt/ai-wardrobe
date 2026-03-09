@@ -43,13 +43,14 @@ func (h *Handler) TryOnSubroutes(w http.ResponseWriter, r *http.Request) {
 	jobID := parts[0]
 
 	switch len(parts) {
-
 	case 1:
 		switch r.Method {
 		case http.MethodGet:
 			h.getTryOnByJobID(w, r, jobID)
+			return
 		default:
 			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
 		}
 	}
 
