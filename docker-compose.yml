@@ -16,11 +16,10 @@ services:
     restart: unless-stopped
     networks:
       - traefik
-      - eru-network
     labels:
       - "traefik.enable=true"
       # BACKEND
-      - "traefik.http.routers.wardrobe-api.rule=Host(`wardrobe.traveller-ai.com`) || Host(`www.wardrobe.traveller-ai.com`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.wardrobe-api.rule=(Host(`wardrobe.traveller-ai.com`) || Host(`www.wardrobe.traveller-ai.com`)) && PathPrefix(`/api`)"
       - "traefik.http.routers.wardrobe-api.entrypoints=websecure"
       - "traefik.http.routers.wardrobe-api.tls.certresolver=le"
       - "traefik.http.services.wardrobe-api.loadbalancer.server.port=8002"
@@ -36,18 +35,14 @@ services:
     restart: unless-stopped
     networks:
       - traefik
-      - eru-network
     labels:
       - "traefik.enable=true"
       # FRONTEND
-      - "traefik.http.routers.wardrobe-front.rule=Host(`wardrobe.traveller-ai.com`) || Host(`www.wardrobe.traveller-ai.com`) && PathPrefix(`/`)"
+      - "traefik.http.routers.wardrobe-front.rule=Host(`wardrobe.traveller-ai.com`) || Host(`www.wardrobe.traveller-ai.com`)"
       - "traefik.http.routers.wardrobe-front.entrypoints=websecure"
       - "traefik.http.routers.wardrobe-front.tls.certresolver=le"
-      - "traefik.http.services.wardrobe-front.loadbalancer.server.port=3002"
+      - "traefik.http.services.wardrobe-front.loadbalancer.server.port=80"
 
 networks:
   traefik:
-    external: true
-
-  eru-network:
     external: true
