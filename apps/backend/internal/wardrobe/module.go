@@ -28,8 +28,8 @@ func Register(mux *http.ServeMux, d deps.Deps) error {
 		return fmt.Errorf("init handler: %w", err)
 	}
 
-	mux.HandleFunc("/try-on", handler.TryOn)
-	mux.HandleFunc("/try-on/", handler.TryOnSubroutes)
+	mux.HandleFunc("/api/v1/wardrobe/try-on", handler.TryOn)
+	mux.HandleFunc("/api/v1/wardrobe/try-on/", handler.TryOnSubroutes)
 
 	return nil
 }
