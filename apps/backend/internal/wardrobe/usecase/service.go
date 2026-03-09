@@ -34,10 +34,12 @@ func (s *Service) CreateJob(ctx context.Context, req domain.CreateJobReq) (domai
 	garmentPath := filepath.Join(s.cfg.Storage.UploadsDir, jobID+"_garment.jpg")
 
 	if err := os.WriteFile(personPath, req.Person.Data, 0644); err != nil {
+		s.logger.Error("write person file failed", err)
 		return domain.CreateJobResp{}, err
 	}
 
 	if err := os.WriteFile(garmentPath, req.Garment.Data, 0644); err != nil {
+		s.logger.Error("write garment file failed", err)
 		return domain.CreateJobResp{}, err
 	}
 
@@ -47,6 +49,7 @@ func (s *Service) CreateJob(ctx context.Context, req domain.CreateJobReq) (domai
 	}
 
 	if err := s.st.SaveJob(job); err != nil {
+		s.logger.Error("save job failed", err)
 		return domain.CreateJobResp{}, err
 	}
 
@@ -60,12 +63,9 @@ func (s *Service) CreateJob(ctx context.Context, req domain.CreateJobReq) (domai
 
 func (s *Service) runTryOn(ctx context.Context, jobID, personPath, garmentPath string) {
 	resultURL, err := s.rp.PostTryOn(ctx, personPath, garmentPath)
-
 	if err != nil {
-
 		s.st.UpdateJobStatus(jobID, domain.StatusFailed, "")
 		s.logger.Error("try-on failed", err)
-
 		return
 	}
 

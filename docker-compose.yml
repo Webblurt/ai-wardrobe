@@ -12,7 +12,7 @@ services:
       - .env
     volumes:
       - ./apps/backend/config:/app/config
-      - ./apps/backend/migrations:/app/migrations
+      - ./apps/backend/data:/app/data 
     restart: unless-stopped
     networks:
       - traefik
