@@ -58,8 +58,8 @@ func (c *ReplicateClient) createPrediction(ctx context.Context, personURL, garme
 	payload := map[string]interface{}{
 		"version": c.modelVer,
 		"input": map[string]interface{}{
-			"person":  personURL,
-			"garment": garmentURL,
+			"human_img": personURL,
+			"garm_img":  garmentURL,
 		},
 	}
 
