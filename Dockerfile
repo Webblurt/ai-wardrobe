@@ -13,3 +13,17 @@ COPY apps/backend/config ./config
 COPY .env .env
 EXPOSE 8002
 CMD ["./ai-wardrobe"]
+
+# FRONTEND BUILD
+FROM node:20 AS frontend-build
+WORKDIR /app
+COPY apps/frontend ./apps/frontend
+WORKDIR /app/apps/frontend
+RUN npm install
+RUN npm run build
+
+# FRONTEND SERVE
+FROM nginx:stable-alpine AS frontend
+COPY --from=frontend-build /app/apps/frontend/dist /usr/share/nginx/html
+EXPOSE 3002
+CMD ["nginx", "-g", "daemon off;"]

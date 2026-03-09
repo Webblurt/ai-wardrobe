@@ -50,7 +50,7 @@ func (s *Service) CreateJob(ctx context.Context, req domain.CreateJobReq) (domai
 		return domain.CreateJobResp{}, err
 	}
 
-	go s.runTryOn(context.Background(), jobID, personPath, garmentPath)
+	go s.runTryOn(context.WithoutCancel(ctx), jobID, personPath, garmentPath)
 
 	return domain.CreateJobResp{
 		JobID:  jobID,
