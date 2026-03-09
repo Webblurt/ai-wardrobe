@@ -8,13 +8,17 @@ const API_BASE = "/api/v1/wardrobe/try-on"
 
 export async function createJob(
   person: File,
-  garment: File
+  garment: File,
+  category: string,
+  fit: string
 ): Promise<JobResponse> {
 
   const form = new FormData()
 
   form.append("person", person)
   form.append("garment", garment)
+  form.append("category", category)
+  form.append("fit", fit)
 
   const res = await fetch(API_BASE, {
     method: "POST",

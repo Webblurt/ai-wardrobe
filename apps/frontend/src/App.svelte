@@ -37,7 +37,7 @@ async function startTryOn() {
 
   loading = true
 
-  const job = await createJob(person, garment)
+  const job = await createJob(person, garment, "upper_body", "regular")
 
   jobId = job.job_id
   status = job.status
@@ -56,7 +56,7 @@ async function poll() {
     status = job.status
 
     if (job.status === "completed") {
-      resultUrl = job.result_url
+      resultUrl = job.result_url ?? null
       loading = false
       clearInterval(interval)
     }
