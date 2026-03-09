@@ -7,6 +7,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/google/uuid"
 )
@@ -30,8 +31,11 @@ func New(replicate ReplicateClient, storage Storage, logger *logger.Logger, cfg 
 func (s *Service) CreateJob(ctx context.Context, req domain.CreateJobReq) (domain.CreateJobResp, error) {
 	jobID := uuid.New().String()
 
-	personPath := filepath.Join(s.cfg.Storage.UploadsDir, jobID+"_person.jpg")
-	garmentPath := filepath.Join(s.cfg.Storage.UploadsDir, jobID+"_garment.jpg")
+	personFile := jobID + "_person.jpg"
+	garmentFile := jobID + "_garment.jpg"
+
+	personPath := filepath.Join(s.cfg.Storage.UploadsDir, personFile)
+	garmentPath := filepath.Join(s.cfg.Storage.UploadsDir, garmentFile)
 
 	if err := os.WriteFile(personPath, req.Person.Data, 0644); err != nil {
 		s.logger.Error("write person file failed", err)
@@ -43,6 +47,9 @@ func (s *Service) CreateJob(ctx context.Context, req domain.CreateJobReq) (domai
 		return domain.CreateJobResp{}, err
 	}
 
+	personURL := s.buildImageURL(personFile)
+	garmentURL := s.buildImageURL(garmentFile)
+
 	job := domain.Job{
 		JobID:  jobID,
 		Status: domain.StatusProcessing,
@@ -53,7 +60,7 @@ func (s *Service) CreateJob(ctx context.Context, req domain.CreateJobReq) (domai
 		return domain.CreateJobResp{}, err
 	}
 
-	go s.runTryOn(context.WithoutCancel(ctx), jobID, personPath, garmentPath)
+	go s.runTryOn(context.WithoutCancel(ctx), jobID, personURL, garmentURL)
 
 	return domain.CreateJobResp{
 		JobID:  jobID,
@@ -61,8 +68,8 @@ func (s *Service) CreateJob(ctx context.Context, req domain.CreateJobReq) (domai
 	}, nil
 }
 
-func (s *Service) runTryOn(ctx context.Context, jobID, personPath, garmentPath string) {
-	resultURL, err := s.rp.PostTryOn(ctx, personPath, garmentPath)
+func (s *Service) runTryOn(ctx context.Context, jobID, personURL, garmentURL string) {
+	resultURL, err := s.rp.PostTryOn(ctx, personURL, garmentURL)
 	if err != nil {
 		s.st.UpdateJobStatus(jobID, domain.StatusFailed, "")
 		s.logger.Error("try-on failed", err)
@@ -83,4 +90,8 @@ func (s *Service) GetJobByID(ctx context.Context, jobID string) (domain.GetJobBy
 		Status:    job.Status,
 		ResultURL: job.ResultURL,
 	}, nil
+}
+
+func (s *Service) buildImageURL(filename string) string {
+	return strings.TrimRight(s.cfg.App.URL, "/") + "/images/" + filename
 }

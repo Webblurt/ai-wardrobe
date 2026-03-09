@@ -9,10 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"mime/multipart"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strconv"
 	"time"
 )
@@ -20,141 +17,43 @@ import (
 type ReplicateClient struct {
 	apiToken string
 	baseURL  string
-	client   *http.Client
 	modelVer string
+	client   *http.Client
 	logger   *logger.Logger
 }
 
 func New(cfg *config.Config, logger *logger.Logger) (*ReplicateClient, error) {
+
+	logger.Info("Initializing Replicate client")
+
 	return &ReplicateClient{
 		apiToken: cfg.Replicate.Token,
 		baseURL:  cfg.Replicate.BaseURL,
 		modelVer: cfg.Replicate.ModelVersion,
 		client: &http.Client{
-			Timeout: 60 * time.Second,
+			Timeout: 120 * time.Second,
 		},
 		logger: logger,
 	}, nil
 }
 
-func (c *ReplicateClient) PostTryOn(ctx context.Context, personPath, garmentPath string) (string, error) {
+func (c *ReplicateClient) PostTryOn(ctx context.Context, personURL, garmentURL string) (string, error) {
 
 	c.logger.Info("Starting try-on prediction")
-	c.logger.Debug("Person image path=%s", personPath)
-	c.logger.Debug("Garment image path=%s", garmentPath)
-
-	personURL, err := c.uploadFile(ctx, personPath)
-	if err != nil {
-		c.logger.Error("Failed uploading person image: %v", err)
-		return "", err
-	}
-
-	c.logger.Debug("Person uploaded url=%s", personURL)
-
-	garmentURL, err := c.uploadFile(ctx, garmentPath)
-	if err != nil {
-		c.logger.Error("Failed uploading garment image: %v", err)
-		return "", err
-	}
-
-	c.logger.Debug("Garment uploaded url=%s", garmentURL)
+	c.logger.Debug("Person URL=%s", personURL)
+	c.logger.Debug("Garment URL=%s", garmentURL)
 
 	predID, err := c.createPrediction(ctx, personURL, garmentURL)
 	if err != nil {
-		c.logger.Error("Failed creating prediction: %v", err)
 		return "", err
 	}
 
 	c.logger.Info("Prediction created id=%s", predID)
 
-	result, err := c.waitPrediction(ctx, predID)
-	if err != nil {
-		c.logger.Error("Prediction failed: %v", err)
-		return "", err
-	}
-
-	c.logger.Success("Try-on prediction completed result=%s", result)
-
-	return result, nil
-}
-
-func (c *ReplicateClient) uploadFile(ctx context.Context, path string) (string, error) {
-
-	c.logger.Info("Uploading file to Replicate")
-	c.logger.Debug("File path=%s", path)
-
-	file, err := os.Open(path)
-	if err != nil {
-		c.logger.Error("Failed opening file: %v", err)
-		return "", err
-	}
-	defer file.Close()
-
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-
-	part, err := writer.CreateFormFile("file", filepath.Base(path))
-	if err != nil {
-		c.logger.Error("Failed creating form file: %v", err)
-		return "", err
-	}
-
-	size, err := io.Copy(part, file)
-	if err != nil {
-		c.logger.Error("Failed copying file data: %v", err)
-		return "", err
-	}
-
-	c.logger.Debug("File copied size=%d bytes", size)
-
-	writer.Close()
-
-	url := c.baseURL + "/files"
-
-	c.logger.Trace("HTTP POST %s", url)
-
-	req, err := http.NewRequestWithContext(
-		ctx,
-		"POST",
-		url,
-		body,
-	)
-	if err != nil {
-		c.logger.Error("Failed creating request: %v", err)
-		return "", err
-	}
-
-	req.Header.Set("Authorization", "Token "+c.apiToken)
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-
-	resp, err := c.client.Do(req)
-	if err != nil {
-		c.logger.Error("Upload request failed: %v", err)
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	c.logger.Debug("Upload response status=%d", resp.StatusCode)
-
-	var r domain.ReplicateUploadResp
-
-	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
-		c.logger.Error("Failed decoding upload response: %v", err)
-		return "", err
-	}
-
-	c.logger.Success("File uploaded url=%s", r.URL)
-
-	return r.URL, nil
+	return c.waitPrediction(ctx, predID)
 }
 
 func (c *ReplicateClient) createPrediction(ctx context.Context, personURL, garmentURL string) (string, error) {
-
-	c.logger.Info("Creating prediction")
-
-	c.logger.Debug("Person URL=%s", personURL)
-	c.logger.Debug("Garment URL=%s", garmentURL)
-	c.logger.Debug("Model version=%s", c.modelVer)
 
 	payload := map[string]interface{}{
 		"version": c.modelVer,
@@ -166,22 +65,16 @@ func (c *ReplicateClient) createPrediction(ctx context.Context, personURL, garme
 
 	data, err := json.Marshal(payload)
 	if err != nil {
-		c.logger.Error("Failed marshaling payload: %v", err)
 		return "", err
 	}
 
-	c.logger.Trace("Prediction payload=%s", string(data))
-
 	url := c.baseURL + "/predictions"
 
-	req, err := http.NewRequestWithContext(
-		ctx,
-		"POST",
-		url,
-		bytes.NewBuffer(data),
-	)
+	c.logger.Trace("POST %s", url)
+	c.logger.Trace("Payload=%s", string(data))
+
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(data))
 	if err != nil {
-		c.logger.Error("Failed creating prediction request: %v", err)
 		return "", err
 	}
 
@@ -190,18 +83,27 @@ func (c *ReplicateClient) createPrediction(ctx context.Context, personURL, garme
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		c.logger.Error("Prediction request failed: %v", err)
 		return "", err
 	}
 	defer resp.Body.Close()
 
+	body, _ := io.ReadAll(resp.Body)
+
 	c.logger.Debug("Prediction response status=%d", resp.StatusCode)
+	c.logger.Trace("Prediction response body=%s", string(body))
+
+	if resp.StatusCode >= 300 {
+		return "", errors.New("replicate prediction creation failed")
+	}
 
 	var r domain.ReplicatePredictionResp
 
-	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
-		c.logger.Error("Failed decoding prediction response: %v", err)
+	if err := json.Unmarshal(body, &r); err != nil {
 		return "", err
+	}
+
+	if r.ID == "" {
+		return "", errors.New("replicate returned empty prediction id")
 	}
 
 	c.logger.Success("Prediction created id=%s", r.ID)
@@ -215,9 +117,8 @@ func (c *ReplicateClient) waitPrediction(ctx context.Context, id string) (string
 
 	for {
 
-		status, url, err := c.getPrediction(ctx, id)
+		status, output, err := c.getPrediction(ctx, id)
 		if err != nil {
-			c.logger.Error("Failed getting prediction status: %v", err)
 			return "", err
 		}
 
@@ -227,26 +128,22 @@ func (c *ReplicateClient) waitPrediction(ctx context.Context, id string) (string
 
 		case "succeeded":
 
-			c.logger.Success("Prediction succeeded result=%s", url)
+			c.logger.Success("Prediction succeeded result=%s", output)
 
-			return url, nil
+			return output, nil
 
-		case "failed":
-
-			c.logger.Error("Prediction failed id=%s", id)
+		case "failed", "canceled":
 
 			return "", errors.New("prediction failed")
 
 		case "processing", "starting":
 
-			c.logger.Trace("Prediction still running... waiting 2s")
 			time.Sleep(2 * time.Second)
 
 		default:
 
-			c.logger.Warn("Unknown prediction status=%s", status)
+			c.logger.Warn("Unknown status=%s", status)
 			time.Sleep(2 * time.Second)
-
 		}
 	}
 }
@@ -255,16 +152,10 @@ func (c *ReplicateClient) getPrediction(ctx context.Context, id string) (string,
 
 	url := c.baseURL + "/predictions/" + id
 
-	c.logger.Trace("HTTP GET %s", url)
+	c.logger.Trace("GET %s", url)
 
-	req, err := http.NewRequestWithContext(
-		ctx,
-		"GET",
-		url,
-		nil,
-	)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		c.logger.Error("Failed creating request: %v", err)
 		return "", "", err
 	}
 
@@ -272,17 +163,22 @@ func (c *ReplicateClient) getPrediction(ctx context.Context, id string) (string,
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		c.logger.Error("Prediction status request failed: %v", err)
 		return "", "", err
 	}
 	defer resp.Body.Close()
 
-	c.logger.Debug("Prediction poll response status=%d", resp.StatusCode)
+	body, _ := io.ReadAll(resp.Body)
+
+	c.logger.Debug("Prediction poll status=%d", resp.StatusCode)
+
+	if resp.StatusCode >= 300 {
+		c.logger.Error("Prediction poll failed body=%s", string(body))
+		return "", "", errors.New("replicate poll failed")
+	}
 
 	var r domain.ReplicatePredictionResp
 
-	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
-		c.logger.Error("Failed decoding prediction status: %v", err)
+	if err := json.Unmarshal(body, &r); err != nil {
 		return "", "", err
 	}
 
@@ -295,8 +191,6 @@ func (c *ReplicateClient) getPrediction(ctx context.Context, id string) (string,
 		status = strconv.Itoa(int(v))
 	case int:
 		status = strconv.Itoa(v)
-	default:
-		status = ""
 	}
 
 	var output string
@@ -319,7 +213,7 @@ func (c *ReplicateClient) getPrediction(ctx context.Context, id string) (string,
 		}
 	}
 
-	c.logger.Trace("Prediction parsed status=%s output=%s", status, output)
+	c.logger.Trace("Parsed status=%s output=%s", status, output)
 
 	return status, output, nil
 }

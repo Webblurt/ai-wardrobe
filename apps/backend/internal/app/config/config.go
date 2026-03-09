@@ -19,6 +19,7 @@ type Config struct {
 type App struct {
 	Name    string `yaml:"name"`
 	Version string `yaml:"version"`
+	URL     string `yaml:"url"`
 }
 
 type Server struct {
