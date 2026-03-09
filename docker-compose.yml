@@ -1,0 +1,53 @@
+services:
+
+  backend:
+    build:
+      context: .
+      target: backend
+    container_name: ai-wardrobe-backend
+    hostname: wardrobebackhost
+    expose:
+      - "8002"
+    env_file:
+      - .env
+    volumes:
+      - ./apps/backend/config:/app/config
+      - ./apps/backend/migrations:/app/migrations
+    restart: unless-stopped
+    networks:
+      - traefik
+      - eru-network
+    labels:
+      - "traefik.enable=true"
+      # BACKEND
+      - "traefik.http.routers.traveller-api.rule=Host(`wardrobe.traveller-ai.com`,`www.wardrobe.traveller-ai.com`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.traveller-api.entrypoints=websecure"
+      - "traefik.http.routers.traveller-api.tls.certresolver=le"
+      - "traefik.http.services.traveller-api.loadbalancer.server.port=8002"
+
+  frontend:
+    build:
+      context: .
+      target: frontend
+    container_name: ai-wardrobe-frontend
+    hostname: wardrobefronthost
+    expose:
+      - "3002"
+    restart: unless-stopped
+    networks:
+      - traefik
+      - eru-network
+    labels:
+      - "traefik.enable=true"
+      # FRONTEND
+      - "traefik.http.routers.traveller-front.rule=Host(`wardrobe.traveller-ai.com`,`www.wardrobe.traveller-ai.com`) && PathPrefix(`/`)"
+      - "traefik.http.routers.traveller-front.entrypoints=websecure"
+      - "traefik.http.routers.traveller-front.tls.certresolver=le"
+      - "traefik.http.services.traveller-front.loadbalancer.server.port=3002"
+
+networks:
+  traefik:
+    external: true
+
+  eru-network:
+    external: true

@@ -2,6 +2,7 @@ package server
 
 import (
 	"ai-wardrobe/internal/app/deps"
+	"ai-wardrobe/internal/wardrobe"
 	"fmt"
 	"net/http"
 )
@@ -15,7 +16,15 @@ func New(d deps.Deps) (http.Handler, error) {
 	// root mux
 	mux := http.NewServeMux()
 
-	mux.Handle("/api/v1/wardrobe/", wardrobeMux)
+	// STATIC FILES
+	// all public
+	imagesFS := http.FileServer(http.Dir(d.Config.Storage.UploadsDir))
+	mux.Handle(
+		"/images/",
+		http.StripPrefix("/images/", imagesFS),
+	)
+
+	mux.Handle("/api/v1/wardrobe", wardrobeMux)
 
 	return mux, nil
 }

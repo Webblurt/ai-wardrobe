@@ -9,9 +9,11 @@ import (
 )
 
 type Config struct {
-	App      `yaml:"app"`
-	Server   `yaml:"server"`
-	LogLevel string `yaml:"log_level"` // possible variants: trace, debug, info, warn, error, fatal, success
+	App       `yaml:"app"`
+	Server    `yaml:"server"`
+	Storage   `yaml:"storage"`
+	Replicate `yaml:"replicate"`
+	LogLevel  string `yaml:"log_level"` // possible variants: trace, debug, info, warn, error, fatal, success
 }
 
 type App struct {
@@ -29,6 +31,21 @@ type Cors struct {
 	AllowedOrigins []string `yaml:"allowed_origins"`
 	AlloweMethods  []string `yaml:"allowed_methods"`
 	AllowedHeaders []string `yaml:"allowed_headers"`
+}
+
+type Storage struct {
+	BaseDir    string `yaml:"base_dir"`
+	UploadsDir string `yaml:"uploads_dir"`
+	ResultsDir string `yaml:"results_dir"`
+	JobsDir    string `yaml:"jobs_dir"`
+}
+
+type Replicate struct {
+	Token        string `yaml:"token"`
+	BaseURL      string `yaml:"base_url"`
+	ModelVersion string `yaml:"model_version"`
+	PollInterval int    `yaml:"poll_interval"`
+	MaxWaitSec   int    `yaml:"max_wait_sec"`
 }
 
 func LoadConfig() (*Config, error) {
