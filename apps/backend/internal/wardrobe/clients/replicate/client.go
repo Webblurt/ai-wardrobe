@@ -56,7 +56,7 @@ func (c *ReplicateClient) PostTryOn(ctx context.Context, personURL, garmentURL s
 func (c *ReplicateClient) createPrediction(ctx context.Context, personURL, garmentURL string) (string, error) {
 
 	payload := map[string]interface{}{
-		// "version": c.modelVer,
+		"version": c.modelVer,
 		"input": map[string]interface{}{
 			"person":  personURL,
 			"garment": garmentURL,
