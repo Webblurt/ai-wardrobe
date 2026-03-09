@@ -11,7 +11,7 @@ import (
 )
 
 func Register(mux *http.ServeMux, d deps.Deps) error {
-	replicateCli, err := replicate.New(d.Config)
+	replicateCli, err := replicate.New(d.Config, d.Logger)
 	if err != nil {
 		return fmt.Errorf("init replicate client: %w", err)
 	}
