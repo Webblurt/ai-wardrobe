@@ -24,7 +24,7 @@ func New(d deps.Deps) (http.Handler, error) {
 		http.StripPrefix("/images/", imagesFS),
 	)
 
-	mux.Handle("/api/v1/wardrobe", wardrobeMux)
+	mux.Handle("/api/v1/wardrobe/", wardrobeMux)
 
 	return mux, nil
 }
