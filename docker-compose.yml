@@ -19,7 +19,7 @@ services:
     labels:
       - "traefik.enable=true"
       # BACKEND
-      - "traefik.http.routers.wardrobe-api.rule=(Host(`wardrobe.traveller-ai.com`) || Host(`www.wardrobe.traveller-ai.com`)) && PathPrefix(`/api`) || PathPrefix(`/images`))"
+      - "traefik.http.routers.wardrobe-api.rule=(Host(`wardrobe.traveller-ai.com`) || Host(`www.wardrobe.traveller-ai.com`)) && (PathPrefix(`/api`) || PathPrefix(`/images`))"
       - "traefik.http.routers.wardrobe-api.entrypoints=websecure"
       - "traefik.http.routers.wardrobe-api.tls.certresolver=le"
       - "traefik.http.services.wardrobe-api.loadbalancer.server.port=8002"
