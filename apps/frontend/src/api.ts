@@ -4,7 +4,7 @@ export type JobResponse = {
   result_url?: string
 }
 
-const API_BASE = "/api/v1/wardrobe"
+const API_BASE = "/api/v1/wardrobe/try-on"
 
 export async function createJob(
   person: File,
@@ -30,7 +30,7 @@ export async function createJob(
 
 export async function getJob(jobId: string): Promise<JobResponse> {
 
-  const res = await fetch(`${API_BASE}?id=${jobId}`)
+  const res = await fetch(`${API_BASE}/${jobId}`)
 
   if (!res.ok) {
     throw new Error("job fetch failed")
