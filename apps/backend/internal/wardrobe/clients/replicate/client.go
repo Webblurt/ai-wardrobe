@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 )
 
@@ -192,11 +193,40 @@ func (c *ReplicateClient) getPrediction(ctx context.Context, id string) (string,
 		return "", "", err
 	}
 
-	var output string
+	// status
+	var status string
 
-	if len(r.Output) > 0 {
-		output = r.Output[0]
+	switch v := r.Status.(type) {
+	case string:
+		status = v
+	case float64:
+		status = strconv.Itoa(int(v))
+	case int:
+		status = strconv.Itoa(v)
+	default:
+		status = ""
 	}
 
-	return r.Status, output, nil
+	// output
+	var output string
+
+	switch v := r.Output.(type) {
+
+	case string:
+		output = v
+
+	case []interface{}:
+		if len(v) > 0 {
+			if s, ok := v[0].(string); ok {
+				output = s
+			}
+		}
+
+	case []string:
+		if len(v) > 0 {
+			output = v[0]
+		}
+	}
+
+	return status, output, nil
 }
