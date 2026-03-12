@@ -108,6 +108,7 @@ func (h *Handler) postTryOn(w http.ResponseWriter, r *http.Request) {
 
 	h.writeJSON(w, resp, http.StatusCreated)
 }
+
 func (h *Handler) getTryOnByJobID(w http.ResponseWriter, r *http.Request, jobID string) {
 	ctx := r.Context()
 

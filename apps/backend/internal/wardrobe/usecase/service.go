@@ -66,7 +66,7 @@ func (s *Service) CreateJob(ctx context.Context, req domain.CreateJobReq) (domai
 
 		switch req.Provider {
 
-		case "fedjaz":
+		case "fedjaz", "fedjazfashnv15":
 
 			s.runFedjazVtonTryOn(
 				context.Background(),
