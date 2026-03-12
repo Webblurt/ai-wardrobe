@@ -1,6 +1,7 @@
 package domain
 
 type CreateJobReq struct {
+	Provider string
 	Category string
 	Fit      string
 	Person   Image

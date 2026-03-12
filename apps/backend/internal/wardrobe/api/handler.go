@@ -14,6 +14,18 @@ func (h *Handler) postTryOn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	provider := r.FormValue("provider")
+	switch provider {
+	case "fedjaz", "replicate":
+		// ok
+	case "":
+		h.writeError(w, "provider is required", http.StatusBadRequest)
+		return
+	default:
+		h.writeError(w, "unknown provider", http.StatusBadRequest)
+		return
+	}
+
 	category := r.FormValue("category")
 	if category == "" {
 		h.writeError(w, "category is required", http.StatusBadRequest)
@@ -40,19 +52,20 @@ func (h *Handler) postTryOn(w http.ResponseWriter, r *http.Request) {
 	}
 	defer garmentFile.Close()
 
-	personData, err := io.ReadAll(personFile)
+	personData, err := io.ReadAll(io.LimitReader(personFile, 10<<20))
 	if err != nil {
-		h.writeError(w, "cannot read person image", http.StatusInternalServerError)
+		h.writeError(w, "cannot read person image", http.StatusBadRequest)
 		return
 	}
 
-	garmentData, err := io.ReadAll(garmentFile)
+	garmentData, err := io.ReadAll(io.LimitReader(garmentFile, 10<<20))
 	if err != nil {
-		h.writeError(w, "cannot read garment image", http.StatusInternalServerError)
+		h.writeError(w, "cannot read garment image", http.StatusBadRequest)
 		return
 	}
 
 	resp, err := h.service.CreateJob(ctx, domain.CreateJobReq{
+		Provider: provider,
 		Category: category,
 		Fit:      fit,
 		Person: domain.Image{

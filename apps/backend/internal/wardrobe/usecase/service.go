@@ -14,14 +14,16 @@ import (
 
 type Service struct {
 	rp     ReplicateClient
+	fc     FedjazVtonClient
 	st     Storage
 	logger *logger.Logger
 	cfg    *config.Config
 }
 
-func New(replicate ReplicateClient, storage Storage, logger *logger.Logger, cfg *config.Config) (*Service, error) {
+func New(replicate ReplicateClient, fc FedjazVtonClient, storage Storage, logger *logger.Logger, cfg *config.Config) (*Service, error) {
 	return &Service{
 		rp:     replicate,
+		fc:     fc,
 		st:     storage,
 		logger: logger,
 		cfg:    cfg,
@@ -60,7 +62,35 @@ func (s *Service) CreateJob(ctx context.Context, req domain.CreateJobReq) (domai
 		return domain.CreateJobResp{}, err
 	}
 
-	go s.runTryOn(context.WithoutCancel(ctx), jobID, personURL, garmentURL)
+	go func() {
+
+		switch req.Provider {
+
+		case "fedjaz":
+
+			s.runFedjazVtonTryOn(
+				context.Background(),
+				jobID,
+				personPath,
+				garmentPath,
+			)
+
+		case "replicate":
+
+			s.runReplicateTryOn(
+				context.Background(),
+				jobID,
+				personURL,
+				garmentURL,
+			)
+
+		default:
+
+			s.logger.Error("unknown provider", req.Provider)
+			s.st.UpdateJobStatus(jobID, domain.StatusFailed, "")
+		}
+
+	}()
 
 	return domain.CreateJobResp{
 		JobID:  jobID,
@@ -68,7 +98,31 @@ func (s *Service) CreateJob(ctx context.Context, req domain.CreateJobReq) (domai
 	}, nil
 }
 
-func (s *Service) runTryOn(ctx context.Context, jobID, personURL, garmentURL string) {
+func (s *Service) runFedjazVtonTryOn(ctx context.Context, jobID, personPath, garmentPath string) {
+
+	img, err := s.fc.PostTryOn(ctx, personPath, garmentPath)
+	if err != nil {
+		s.st.UpdateJobStatus(jobID, domain.StatusFailed, "")
+		s.logger.Error("try-on failed", err)
+		return
+	}
+
+	resultFile := jobID + "_result.png"
+	resultPath := filepath.Join(s.cfg.Storage.UploadsDir, resultFile)
+
+	err = os.WriteFile(resultPath, img, 0644)
+	if err != nil {
+		s.logger.Error("write result failed", err)
+		s.st.UpdateJobStatus(jobID, domain.StatusFailed, "")
+		return
+	}
+
+	resultURL := s.buildImageURL(resultFile)
+
+	s.st.UpdateJobStatus(jobID, domain.StatusCompleted, resultURL)
+}
+
+func (s *Service) runReplicateTryOn(ctx context.Context, jobID, personURL, garmentURL string) {
 	resultURL, err := s.rp.PostTryOn(ctx, personURL, garmentURL)
 	if err != nil {
 		s.st.UpdateJobStatus(jobID, domain.StatusFailed, "")

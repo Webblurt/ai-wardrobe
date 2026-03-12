@@ -7,6 +7,7 @@ export type JobResponse = {
 const API_BASE = "/api/v1/wardrobe/try-on"
 
 export async function createJob(
+  provider: string,
   person: File,
   garment: File,
   category: string,
@@ -15,6 +16,7 @@ export async function createJob(
 
   const form = new FormData()
 
+  form.append("provider", provider)
   form.append("person", person)
   form.append("garment", garment)
   form.append("category", category)

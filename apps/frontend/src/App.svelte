@@ -1,6 +1,7 @@
 <script lang="ts">
 import { createJob, getJob } from "./api"
 
+let provider = "fedjaz"
 let person: File | null = null
 let garment: File | null = null
 
@@ -37,7 +38,7 @@ async function startTryOn() {
 
   loading = true
 
-  const job = await createJob(person, garment, "upper_body", "regular")
+  const job = await createJob(provider, person, garment, "upper_body", "regular")
 
   jobId = job.job_id
   status = job.status
@@ -96,6 +97,15 @@ async function poll() {
 
 </div>
 
+<div class="provider">
+  <label>Provider</label>
+
+  <select bind:value={provider}>
+    <option value="fedjaz">Fedjaz VTON</option>
+    <option value="replicate">Replicate</option>
+  </select>
+</div>
+
 <button on:click={startTryOn} disabled={loading}>
   Try On
 </button>
@@ -128,6 +138,16 @@ button{
 
 img{
   margin-top:10px;
+}
+
+.provider{
+  margin-bottom:20px;
+  font-family:sans-serif;
+}
+
+select{
+  padding:6px;
+  margin-left:10px;
 }
 
 </style>
