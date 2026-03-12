@@ -173,7 +173,7 @@ async function poll() {
 
   <div>
     <label>Upscale</label>
-    <select bind:value={upscaler}>
+    <select bind:value={upscale}>
       <option value="1">1</option>
       <option value="2">2</option>
       <option value="3">4</option>
