@@ -264,17 +264,17 @@ async function poll() {
 
     <div>
       <label>Num samples</label>
-      <input type="number" bind:value={numSamples}/>
+      <input type="number" bind:value={numSamples} min="1" max="4"/>
     </div>
 
     <div>
       <label>Num timesteps</label>
-      <input type="number" bind:value={numTimesteps}/>
+      <input type="number" bind:value={numTimesteps} min="1" max="100"/>
     </div>
 
     <div>
       <label>Guidance scale</label>
-      <input type="number" step="0.1" bind:value={guidanceScale}/>
+      <input type="number" step="0.1" bind:value={guidanceScale} min="0.1" max="10"/>
     </div>
 
     <div>
