@@ -17,7 +17,7 @@ func (h *Handler) postTryOn(w http.ResponseWriter, r *http.Request) {
 	provider := r.FormValue("provider")
 
 	switch provider {
-	case "fedjaz", "fedjaz_fashn_v1.5", "replicate":
+	case "fedjaz", "fedjazfashnv15", "replicate":
 	default:
 		h.writeError(w, "unknown provider", http.StatusBadRequest)
 		return

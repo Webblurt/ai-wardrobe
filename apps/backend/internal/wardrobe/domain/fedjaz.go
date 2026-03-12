@@ -4,7 +4,7 @@ type TryOnMode string
 
 const (
 	TryOnModeDefault TryOnMode = "fedjaz"
-	TryOnModeFashn   TryOnMode = "fedjaz_fashn_v1.5"
+	TryOnModeFashn   TryOnMode = "fedjazfashnv15"
 )
 
 type TryOnParams struct {
