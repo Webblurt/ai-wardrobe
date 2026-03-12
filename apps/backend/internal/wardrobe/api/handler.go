@@ -39,11 +39,11 @@ func (h *Handler) postTryOn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fit := r.FormValue("fit")
-	if fit == "" {
-		h.writeError(w, "fit is required", http.StatusBadRequest)
-		return
-	}
+	// fit := r.FormValue("fit")
+	// if fit == "" {
+	// 	h.writeError(w, "fit is required", http.StatusBadRequest)
+	// 	return
+	// }
 
 	personFile, personHeader, err := r.FormFile("person")
 	if err != nil {

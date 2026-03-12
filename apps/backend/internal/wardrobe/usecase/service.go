@@ -83,6 +83,7 @@ func (s *Service) CreateJob(ctx context.Context, req domain.CreateJobReq) (domai
 				jobID,
 				personURL,
 				garmentURL,
+				req,
 			)
 
 		default:
@@ -131,8 +132,16 @@ func (s *Service) runFedjazVtonTryOn(ctx context.Context, jobID, personPath, gar
 	s.st.UpdateJobStatus(jobID, domain.StatusCompleted, resultURL)
 }
 
-func (s *Service) runReplicateTryOn(ctx context.Context, jobID, personURL, garmentURL string) {
-	resultURL, err := s.rp.PostTryOn(ctx, personURL, garmentURL)
+func (s *Service) runReplicateTryOn(ctx context.Context, jobID, personURL, garmentURL string, req domain.CreateJobReq) {
+	resultURL, err := s.rp.PostTryOn(ctx, domain.TryOnParams{
+		Description: req.Description,
+		Category:    req.Category,
+		Steps:       req.Steps,
+		Seed:        req.Seed,
+		Autocrop:    req.Autocrop,
+		Upscale:     req.Upscale,
+		Upscaler:    req.Upscaler,
+	}, personURL, garmentURL)
 	if err != nil {
 		s.st.UpdateJobStatus(jobID, domain.StatusFailed, "")
 		s.logger.Error("try-on failed", err)

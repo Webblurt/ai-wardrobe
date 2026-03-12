@@ -37,13 +37,13 @@ func New(cfg *config.Config, logger *logger.Logger) (*ReplicateClient, error) {
 	}, nil
 }
 
-func (c *ReplicateClient) PostTryOn(ctx context.Context, personURL, garmentURL string) (string, error) {
+func (c *ReplicateClient) PostTryOn(ctx context.Context, params domain.TryOnParams, personURL, garmentURL string) (string, error) {
 
 	c.logger.Info("Starting try-on prediction")
 	c.logger.Debug("Person URL=%s", personURL)
 	c.logger.Debug("Garment URL=%s", garmentURL)
 
-	predID, err := c.createPrediction(ctx, personURL, garmentURL)
+	predID, err := c.createPrediction(ctx, params, personURL, garmentURL)
 	if err != nil {
 		return "", err
 	}
@@ -53,17 +53,17 @@ func (c *ReplicateClient) PostTryOn(ctx context.Context, personURL, garmentURL s
 	return c.waitPrediction(ctx, predID)
 }
 
-func (c *ReplicateClient) createPrediction(ctx context.Context, personURL, garmentURL string) (string, error) {
+func (c *ReplicateClient) createPrediction(ctx context.Context, params domain.TryOnParams, personURL, garmentURL string) (string, error) {
 
 	payload := map[string]interface{}{
 		"version": c.modelVer,
 		"input": map[string]interface{}{
 			"human_img":           personURL,
 			"garm_img":            garmentURL,
-			"garment_des":         "dress",
-			"num_inference_steps": 30,
-			"guidance_scale":      2.5,
-			"seed":                42,
+			"garment_des":         params.Category,
+			"num_inference_steps": params.Steps,
+			"guidance_scale":      params.Upscale,
+			"seed":                params.Seed,
 		},
 	}
 

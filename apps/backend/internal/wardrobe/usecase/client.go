@@ -6,7 +6,7 @@ import (
 )
 
 type ReplicateClient interface {
-	PostTryOn(ctx context.Context, personURL, garmentURL string) (string, error)
+	PostTryOn(ctx context.Context, params domain.TryOnParams, personURL, garmentURL string) (string, error)
 }
 
 type FedjazVtonClient interface {
