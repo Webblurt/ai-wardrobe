@@ -14,36 +14,38 @@ func (h *Handler) postTryOn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	provider := r.FormValue("provider")
+
+	switch provider {
+	case "fedjaz", "fedjaz_fashn_v1.5", "replicate":
+	default:
+		h.writeError(w, "unknown provider", http.StatusBadRequest)
+		return
+	}
+
 	description := r.FormValue("description")
+	category := r.FormValue("category")
+
+	if category == "" {
+		h.writeError(w, "category is required", http.StatusBadRequest)
+		return
+	}
+
 	steps := parseInt(r.FormValue("steps"))
 	seed := parseInt(r.FormValue("seed"))
 	autocrop := parseBool(r.FormValue("autocrop"))
 	upscale := parseInt(r.FormValue("upscale"))
 	upscaler := r.FormValue("upscaler")
 
-	provider := r.FormValue("provider")
-	switch provider {
-	case "fedjaz", "replicate":
-		// ok
-	case "":
-		h.writeError(w, "provider is required", http.StatusBadRequest)
-		return
-	default:
-		h.writeError(w, "unknown provider", http.StatusBadRequest)
-		return
-	}
+	// ---- fashn params ----
 
-	category := r.FormValue("category")
-	if category == "" {
-		h.writeError(w, "category is required", http.StatusBadRequest)
-		return
-	}
+	garmentPhotoType := r.FormValue("garmentPhotoType")
+	numSamples := parseInt(r.FormValue("numSamples"))
+	numTimesteps := parseInt(r.FormValue("numTimesteps"))
+	guidanceScale := parseFloat(r.FormValue("guidanceScale"))
+	segmentationFree := parseBool(r.FormValue("segmentationFree"))
 
-	// fit := r.FormValue("fit")
-	// if fit == "" {
-	// 	h.writeError(w, "fit is required", http.StatusBadRequest)
-	// 	return
-	// }
+	// ---- files ----
 
 	personFile, personHeader, err := r.FormFile("person")
 	if err != nil {
@@ -72,7 +74,8 @@ func (h *Handler) postTryOn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp, err := h.service.CreateJob(ctx, domain.CreateJobReq{
-		Provider:    provider,
+		Provider: provider,
+
 		Description: description,
 		Category:    category,
 		Steps:       steps,
@@ -81,10 +84,17 @@ func (h *Handler) postTryOn(w http.ResponseWriter, r *http.Request) {
 		Upscale:     upscale,
 		Upscaler:    upscaler,
 
+		GarmentPhotoType: garmentPhotoType,
+		NumSamples:       numSamples,
+		NumTimesteps:     numTimesteps,
+		GuidanceScale:    guidanceScale,
+		SegmentationFree: segmentationFree,
+
 		Person: domain.Image{
 			Data:        personData,
 			ContentType: personHeader.Header.Get("Content-Type"),
 		},
+
 		Garment: domain.Image{
 			Data:        garmentData,
 			ContentType: garmentHeader.Header.Get("Content-Type"),
@@ -98,7 +108,6 @@ func (h *Handler) postTryOn(w http.ResponseWriter, r *http.Request) {
 
 	h.writeJSON(w, resp, http.StatusCreated)
 }
-
 func (h *Handler) getTryOnByJobID(w http.ResponseWriter, r *http.Request, jobID string) {
 	ctx := r.Context()
 

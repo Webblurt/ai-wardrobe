@@ -35,3 +35,11 @@ func parseBool(v string) bool {
 	b, _ := strconv.ParseBool(v)
 	return b
 }
+
+func parseFloat(s string) float32 {
+	if s == "" {
+		return 0
+	}
+	v, _ := strconv.ParseFloat(s, 32)
+	return float32(v)
+}

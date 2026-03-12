@@ -10,17 +10,34 @@ let personPreview = ""
 let garmentPreview = ""
 
 let description = ""
-let category = "upper_body"
+let category = ""
+
 let steps = 30
 let seed = 1
 let autocrop = false
 let upscale = 1
 let upscaler = "ultrasharp"
 
+// fashn
+let garmentPhotoType = "model"
+let numSamples = 1
+let numTimesteps = 30
+let guidanceScale = 5
+let segmentationFree = false
+
 let jobId: string | null = null
 let status = ""
 let resultUrl: string | null = null
 let loading = false
+
+
+// ---------- computed ----------
+
+$: showDefault = provider === "fedjaz" || provider === "replicate"
+$: showFashn = provider === "fedjaz_fashn_v1.5"
+
+
+// ---------- files ----------
 
 function onPerson(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0]
@@ -38,6 +55,9 @@ function onGarment(e: Event) {
   garmentPreview = URL.createObjectURL(file)
 }
 
+
+// ---------- tryon ----------
+
 async function startTryOn() {
 
   if (!person || !garment) {
@@ -51,15 +71,24 @@ async function startTryOn() {
 
     const job = await createJob({
       provider,
+
       person,
       garment,
+
       description,
       category,
+
       steps,
       seed,
       autocrop,
       upscale,
-      upscaler
+      upscaler,
+
+      garmentPhotoType,
+      numSamples,
+      numTimesteps,
+      guidanceScale,
+      segmentationFree,
     })
 
     jobId = job.job_id
@@ -71,8 +100,8 @@ async function startTryOn() {
     alert("Failed to start job")
     loading = false
   }
-
 }
+
 
 async function poll() {
 
@@ -97,11 +126,12 @@ async function poll() {
     }
 
   }, 2000)
-
 }
 </script>
 
+
 <h1>AI Wardrobe</h1>
+
 
 <div class="upload">
 
@@ -125,83 +155,153 @@ async function poll() {
 
 </div>
 
+
 <div class="options">
 
   <div>
     <label>Provider</label>
     <select bind:value={provider}>
-      <option value="fedjaz">Fedjaz VTON</option>
+      <option value="fedjaz">Fedjaz Default</option>
+      <option value="fedjaz_fashn_v1.5">Fedjaz FASHN v1.5</option>
       <option value="replicate">Replicate</option>
     </select>
   </div>
 
+
   <div>
     <label>Description</label>
-    <input type="text" bind:value={description} />
+    <input type="text" bind:value={description}/>
   </div>
 
-  <div>
-    <label>Category</label>
-    <select bind:value={category}>
-      <option value="upper_body">Upper body</option>
-      <option value="upper_body_open">Upper body open</option>
-      <option value="lower_body">Lower body</option>
-      <option value="dresses">Dresses</option>
-      <option value="skirt">Skirt</option>
-      <option value="skirt_short">Skirt short</option>
-      <option value="skirt_mini">Skirt mini</option>
-      <option value="shoes">Shoes</option>
-      <option value="socks">Socks</option>
-      <option value="stockings">Stockings</option>
-    </select>
-  </div>
 
-  <div>
-    <label>Steps</label>
-    <input type="number" bind:value={steps} min="1" max="100"/>
-  </div>
+  <!-- CATEGORY -->
 
-  <div>
-    <label>Seed</label>
-    <input type="number" bind:value={seed} min="1"/>
-  </div>
+  {#if showDefault}
 
-  <div>
-    <label>Autocrop</label>
-    <input type="checkbox" bind:checked={autocrop}/>
-  </div>
+    <div>
+      <label>Category</label>
+      <select bind:value={category}>
+        <option value="upper_body">upper_body</option>
+        <option value="upper_body_open">upper_body_open</option>
+        <option value="lower_body">lower_body</option>
+        <option value="dresses">dresses</option>
+        <option value="skirt">skirt</option>
+        <option value="skirt_short">skirt_short</option>
+        <option value="skirt_mini">skirt_mini</option>
+        <option value="shoes">shoes</option>
+        <option value="socks">socks</option>
+        <option value="stockings">stockings</option>
+      </select>
+    </div>
 
-  <div>
-    <label>Upscale</label>
-    <select bind:value={upscale}>
-      <option value={1}>1</option>
-      <option value={2}>2</option>
-      <option value={4}>4</option>
-    </select>
-  </div>
+  {/if}
 
-  <div>
-    <label>Upscaler</label>
-    <select bind:value={upscaler}>
-      <option value="ultrasharp">UltraSharp</option>
-      <option value="realesrgan">RealESRGAN</option>
-    </select>
-  </div>
+
+  {#if showFashn}
+
+    <div>
+      <label>Category</label>
+      <select bind:value={category}>
+        <option value="tops">tops</option>
+        <option value="bottoms">bottoms</option>
+        <option value="one_pieces">one_pieces</option>
+      </select>
+    </div>
+
+  {/if}
+
+
+  <!-- DEFAULT PARAMS -->
+
+  {#if showDefault}
+
+    <div>
+      <label>Steps</label>
+      <input type="number" bind:value={steps}/>
+    </div>
+
+    <div>
+      <label>Seed</label>
+      <input type="number" bind:value={seed}/>
+    </div>
+
+    <div>
+      <label>Autocrop</label>
+      <input type="checkbox" bind:checked={autocrop}/>
+    </div>
+
+    <div>
+      <label>Upscale</label>
+      <select bind:value={upscale}>
+        <option value={1}>1</option>
+        <option value={2}>2</option>
+        <option value={4}>4</option>
+      </select>
+    </div>
+
+    <div>
+      <label>Upscaler</label>
+      <select bind:value={upscaler}>
+        <option value="ultrasharp">ultrasharp</option>
+        <option value="realesrgan">realesrgan</option>
+      </select>
+    </div>
+
+  {/if}
+
+
+  <!-- FASHN PARAMS -->
+
+  {#if showFashn}
+
+    <div>
+      <label>Garment photo type</label>
+      <select bind:value={garmentPhotoType}>
+        <option value="model">model</option>
+        <option value="flat_lay">flat_lay</option>
+      </select>
+    </div>
+
+    <div>
+      <label>Num samples</label>
+      <input type="number" bind:value={numSamples}/>
+    </div>
+
+    <div>
+      <label>Num timesteps</label>
+      <input type="number" bind:value={numTimesteps}/>
+    </div>
+
+    <div>
+      <label>Guidance scale</label>
+      <input type="number" step="0.1" bind:value={guidanceScale}/>
+    </div>
+
+    <div>
+      <label>Segmentation free</label>
+      <input type="checkbox" bind:checked={segmentationFree}/>
+    </div>
+
+  {/if}
 
 </div>
+
 
 <button on:click={startTryOn} disabled={loading}>
   Try On
 </button>
 
+
 {#if status}
 <p>Status: {status}</p>
 {/if}
+
 
 {#if resultUrl}
 <h2>Result</h2>
 <img src={resultUrl} width="400"/>
 {/if}
+
 
 <style>
 
@@ -217,7 +317,7 @@ h1{
 
 .options{
   display:grid;
-  grid-template-columns:repeat(2,200px);
+  grid-template-columns:repeat(2,220px);
   gap:12px;
   margin-bottom:20px;
   font-family:sans-serif;

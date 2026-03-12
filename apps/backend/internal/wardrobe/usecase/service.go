@@ -100,9 +100,17 @@ func (s *Service) CreateJob(ctx context.Context, req domain.CreateJobReq) (domai
 	}, nil
 }
 
-func (s *Service) runFedjazVtonTryOn(ctx context.Context, jobID, personPath, garmentPath string, req domain.CreateJobReq) {
+func (s *Service) runFedjazVtonTryOn(
+	ctx context.Context,
+	jobID,
+	personPath,
+	garmentPath string,
+	req domain.CreateJobReq,
+) {
 
-	img, err := s.fc.PostTryOn(ctx, domain.TryOnParams{
+	params := domain.TryOnParams{
+		Mode: domain.TryOnMode(req.Provider),
+
 		Description: req.Description,
 		Category:    req.Category,
 		Steps:       req.Steps,
@@ -110,7 +118,20 @@ func (s *Service) runFedjazVtonTryOn(ctx context.Context, jobID, personPath, gar
 		Autocrop:    req.Autocrop,
 		Upscale:     req.Upscale,
 		Upscaler:    req.Upscaler,
-	}, personPath, garmentPath)
+
+		GarmentPhotoType: req.GarmentPhotoType,
+		NumSamples:       req.NumSamples,
+		NumTimesteps:     req.NumTimesteps,
+		GuidanceScale:    req.GuidanceScale,
+		SegmentationFree: req.SegmentationFree,
+	}
+
+	img, err := s.fc.PostTryOn(
+		ctx,
+		params,
+		personPath,
+		garmentPath,
+	)
 	if err != nil {
 		s.st.UpdateJobStatus(jobID, domain.StatusFailed, "")
 		s.logger.Error("try-on failed", err)
@@ -118,7 +139,10 @@ func (s *Service) runFedjazVtonTryOn(ctx context.Context, jobID, personPath, gar
 	}
 
 	resultFile := jobID + "_result.png"
-	resultPath := filepath.Join(s.cfg.Storage.UploadsDir, resultFile)
+	resultPath := filepath.Join(
+		s.cfg.Storage.UploadsDir,
+		resultFile,
+	)
 
 	err = os.WriteFile(resultPath, img, 0644)
 	if err != nil {
@@ -129,7 +153,11 @@ func (s *Service) runFedjazVtonTryOn(ctx context.Context, jobID, personPath, gar
 
 	resultURL := s.buildImageURL(resultFile)
 
-	s.st.UpdateJobStatus(jobID, domain.StatusCompleted, resultURL)
+	s.st.UpdateJobStatus(
+		jobID,
+		domain.StatusCompleted,
+		resultURL,
+	)
 }
 
 func (s *Service) runReplicateTryOn(ctx context.Context, jobID, personURL, garmentURL string, req domain.CreateJobReq) {

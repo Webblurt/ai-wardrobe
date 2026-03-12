@@ -65,31 +65,8 @@ func (c *FedjazVtonClient) submit(
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	if params.Description != "" {
-		writer.WriteField("description", params.Description)
-	}
 
-	if params.Category != "" {
-		writer.WriteField("category", params.Category)
-	}
-
-	if params.Steps > 0 {
-		writer.WriteField("steps", strconv.Itoa(params.Steps))
-	}
-
-	if params.Seed != 0 {
-		writer.WriteField("seed", strconv.Itoa(params.Seed))
-	}
-
-	writer.WriteField("autocrop", strconv.FormatBool(params.Autocrop))
-
-	if params.Upscale > 0 {
-		writer.WriteField("upscale", strconv.Itoa(params.Upscale))
-	}
-
-	if params.Upscaler != "" {
-		writer.WriteField("upscaler", params.Upscaler)
-	}
+	// ---------------- FILES ----------------
 
 	personFile, err := os.Open(personPath)
 	if err != nil {
@@ -108,24 +85,113 @@ func (c *FedjazVtonClient) submit(
 		return "", err
 	}
 
-	io.Copy(personPart, personFile)
+	if _, err = io.Copy(personPart, personFile); err != nil {
+		return "", err
+	}
 
 	garmentPart, err := writer.CreateFormFile("garment", filepath.Base(garmentPath))
 	if err != nil {
 		return "", err
 	}
 
-	io.Copy(garmentPart, garmentFile)
+	if _, err = io.Copy(garmentPart, garmentFile); err != nil {
+		return "", err
+	}
 
-	// optional params
-	// writer.WriteField("category", "dresses")
-	// writer.WriteField("steps", "30")
+	// ---------------- PARAMS ----------------
 
-	writer.Close()
+	endpoint := "/tryon"
 
-	url := c.baseURL + "/tryon"
+	if params.Mode == domain.TryOnModeFashn {
 
-	req, err := http.NewRequestWithContext(ctx, "POST", url, body)
+		endpoint = "/fashn/tryon"
+
+		if params.Category != "" {
+			writer.WriteField("category", params.Category)
+		}
+
+		if params.GarmentPhotoType != "" {
+			writer.WriteField("garmentPhotoType", params.GarmentPhotoType)
+		}
+
+		if params.NumSamples > 0 {
+			writer.WriteField("numSamples", strconv.Itoa(params.NumSamples))
+		}
+
+		if params.NumTimesteps > 0 {
+			writer.WriteField("numTimesteps", strconv.Itoa(params.NumTimesteps))
+		}
+
+		if params.GuidanceScale > 0 {
+			writer.WriteField(
+				"guidanceScale",
+				fmt.Sprintf("%f", params.GuidanceScale),
+			)
+		}
+
+		if params.Seed != 0 {
+			writer.WriteField("seed", strconv.Itoa(params.Seed))
+		}
+
+		writer.WriteField(
+			"segmentationFree",
+			strconv.FormatBool(params.SegmentationFree),
+		)
+
+	} else {
+
+		endpoint = "/tryon"
+
+		if params.Description != "" {
+			writer.WriteField("description", params.Description)
+		}
+
+		if params.Category != "" {
+			writer.WriteField("category", params.Category)
+		}
+
+		if params.Steps > 0 {
+			writer.WriteField("steps", strconv.Itoa(params.Steps))
+		}
+
+		if params.Seed != 0 {
+			writer.WriteField("seed", strconv.Itoa(params.Seed))
+		}
+
+		writer.WriteField(
+			"autocrop",
+			strconv.FormatBool(params.Autocrop),
+		)
+
+		if params.Upscale > 0 {
+			writer.WriteField(
+				"upscale",
+				strconv.Itoa(params.Upscale),
+			)
+		}
+
+		if params.Upscaler != "" {
+			writer.WriteField(
+				"upscaler",
+				params.Upscaler,
+			)
+		}
+	}
+
+	if err = writer.Close(); err != nil {
+		return "", err
+	}
+
+	// ---------------- REQUEST ----------------
+
+	url := c.baseURL + endpoint
+
+	req, err := http.NewRequestWithContext(
+		ctx,
+		"POST",
+		url,
+		body,
+	)
 	if err != nil {
 		return "", err
 	}
@@ -142,15 +208,18 @@ func (c *FedjazVtonClient) submit(
 	data, _ := io.ReadAll(resp.Body)
 
 	if resp.StatusCode != 200 {
-		return "", fmt.Errorf("submit failed: %s", string(data))
+		return "", fmt.Errorf(
+			"submit failed: status=%d body=%s",
+			resp.StatusCode,
+			string(data),
+		)
 	}
 
 	var r struct {
 		CorrelationID string `json:"correlationId"`
 	}
 
-	err = json.Unmarshal(data, &r)
-	if err != nil {
+	if err = json.Unmarshal(data, &r); err != nil {
 		return "", err
 	}
 
