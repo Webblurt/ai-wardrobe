@@ -34,7 +34,7 @@ let loading = false
 // ---------- computed ----------
 
 $: showDefault = provider === "fedjaz" || provider === "replicate"
-$: showFashn = provider === "fedjaz_fashn_v1.5"
+$: showFashn = provider === "fedjazfashnv15"
 
 
 // ---------- files ----------
