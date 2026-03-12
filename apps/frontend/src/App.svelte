@@ -12,7 +12,7 @@ let garmentPreview = ""
 let description = ""
 let category = "upper_body"
 let steps = 30
-let seed = 0
+let seed = 1
 let autocrop = false
 let upscale = 1
 let upscaler = "ultrasharp"
@@ -163,7 +163,7 @@ async function poll() {
 
   <div>
     <label>Seed</label>
-    <input type="number" bind:value={seed}/>
+    <input type="number" bind:value={seed} min="1"/>
   </div>
 
   <div>
@@ -174,9 +174,9 @@ async function poll() {
   <div>
     <label>Upscale</label>
     <select bind:value={upscale}>
-      <option value="1">1</option>
-      <option value="2">2</option>
-      <option value="3">4</option>
+      <option value={1}>1</option>
+      <option value={2}>2</option>
+      <option value={4}>4</option>
     </select>
   </div>
 
