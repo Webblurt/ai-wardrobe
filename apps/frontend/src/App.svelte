@@ -2,11 +2,20 @@
 import { createJob, getJob } from "./api"
 
 let provider = "fedjaz"
+
 let person: File | null = null
 let garment: File | null = null
 
 let personPreview = ""
 let garmentPreview = ""
+
+let description = ""
+let category = "upper_body"
+let steps = 30
+let seed = 0
+let autocrop = false
+let upscale = 1
+let upscaler = "ultrasharp"
 
 let jobId: string | null = null
 let status = ""
@@ -38,12 +47,31 @@ async function startTryOn() {
 
   loading = true
 
-  const job = await createJob(provider, person, garment, "upper_body", "regular")
+  try {
 
-  jobId = job.job_id
-  status = job.status
+    const job = await createJob({
+      provider,
+      person,
+      garment,
+      description,
+      category,
+      steps,
+      seed,
+      autocrop,
+      upscale,
+      upscaler
+    })
 
-  poll()
+    jobId = job.job_id
+    status = job.status
+
+    poll()
+
+  } catch (err) {
+    alert("Failed to start job")
+    loading = false
+  }
+
 }
 
 async function poll() {
@@ -97,13 +125,65 @@ async function poll() {
 
 </div>
 
-<div class="provider">
-  <label>Provider</label>
+<div class="options">
 
-  <select bind:value={provider}>
-    <option value="fedjaz">Fedjaz VTON</option>
-    <option value="replicate">Replicate</option>
-  </select>
+  <div>
+    <label>Provider</label>
+    <select bind:value={provider}>
+      <option value="fedjaz">Fedjaz VTON</option>
+      <option value="replicate">Replicate</option>
+    </select>
+  </div>
+
+  <div>
+    <label>Description</label>
+    <input type="text" bind:value={description} />
+  </div>
+
+  <div>
+    <label>Category</label>
+    <select bind:value={category}>
+      <option value="upper_body">Upper body</option>
+      <option value="upper_body_open">Upper body open</option>
+      <option value="lower_body">Lower body</option>
+      <option value="dresses">Dresses</option>
+      <option value="skirt">Skirt</option>
+      <option value="skirt_short">Skirt short</option>
+      <option value="skirt_mini">Skirt mini</option>
+      <option value="shoes">Shoes</option>
+      <option value="socks">Socks</option>
+      <option value="stockings">Stockings</option>
+    </select>
+  </div>
+
+  <div>
+    <label>Steps</label>
+    <input type="number" bind:value={steps} min="1" max="100"/>
+  </div>
+
+  <div>
+    <label>Seed</label>
+    <input type="number" bind:value={seed}/>
+  </div>
+
+  <div>
+    <label>Autocrop</label>
+    <input type="checkbox" bind:checked={autocrop}/>
+  </div>
+
+  <div>
+    <label>Upscale</label>
+    <input type="number" bind:value={upscale}/>
+  </div>
+
+  <div>
+    <label>Upscaler</label>
+    <select bind:value={upscaler}>
+      <option value="ultrasharp">UltraSharp</option>
+      <option value="realesrgan">RealESRGAN</option>
+    </select>
+  </div>
+
 </div>
 
 <button on:click={startTryOn} disabled={loading}>
@@ -131,6 +211,25 @@ h1{
   margin-bottom:20px;
 }
 
+.options{
+  display:grid;
+  grid-template-columns:repeat(2,200px);
+  gap:12px;
+  margin-bottom:20px;
+  font-family:sans-serif;
+}
+
+label{
+  display:block;
+  font-size:14px;
+  margin-bottom:4px;
+}
+
+input, select{
+  width:100%;
+  padding:6px;
+}
+
 button{
   padding:10px 20px;
   font-size:16px;
@@ -138,16 +237,6 @@ button{
 
 img{
   margin-top:10px;
-}
-
-.provider{
-  margin-bottom:20px;
-  font-family:sans-serif;
-}
-
-select{
-  padding:6px;
-  margin-left:10px;
 }
 
 </style>

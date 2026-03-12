@@ -3,6 +3,7 @@ package fedjazvton
 import (
 	"ai-wardrobe/internal/app/config"
 	"ai-wardrobe/internal/platform/logger"
+	"ai-wardrobe/internal/wardrobe/domain"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -13,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 )
 
@@ -39,11 +41,12 @@ func New(cfg *config.Config, logger *logger.Logger) (*FedjazVtonClient, error) {
 
 func (c *FedjazVtonClient) PostTryOn(
 	ctx context.Context,
+	params domain.TryOnParams,
 	personPath string,
 	garmentPath string,
 ) ([]byte, error) {
 
-	id, err := c.submit(ctx, personPath, garmentPath)
+	id, err := c.submit(ctx, personPath, garmentPath, params)
 	if err != nil {
 		return nil, err
 	}
@@ -57,10 +60,36 @@ func (c *FedjazVtonClient) submit(
 	ctx context.Context,
 	personPath string,
 	garmentPath string,
+	params domain.TryOnParams,
 ) (string, error) {
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
+	if params.Description != "" {
+		writer.WriteField("description", params.Description)
+	}
+
+	if params.Category != "" {
+		writer.WriteField("category", params.Category)
+	}
+
+	if params.Steps > 0 {
+		writer.WriteField("steps", strconv.Itoa(params.Steps))
+	}
+
+	if params.Seed != 0 {
+		writer.WriteField("seed", strconv.Itoa(params.Seed))
+	}
+
+	writer.WriteField("autocrop", strconv.FormatBool(params.Autocrop))
+
+	if params.Upscale > 0 {
+		writer.WriteField("upscale", strconv.Itoa(params.Upscale))
+	}
+
+	if params.Upscaler != "" {
+		writer.WriteField("upscaler", params.Upscaler)
+	}
 
 	personFile, err := os.Open(personPath)
 	if err != nil {
@@ -89,8 +118,8 @@ func (c *FedjazVtonClient) submit(
 	io.Copy(garmentPart, garmentFile)
 
 	// optional params
-	writer.WriteField("category", "dresses")
-	writer.WriteField("steps", "30")
+	// writer.WriteField("category", "dresses")
+	// writer.WriteField("steps", "30")
 
 	writer.Close()
 

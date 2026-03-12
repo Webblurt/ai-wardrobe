@@ -73,6 +73,7 @@ func (s *Service) CreateJob(ctx context.Context, req domain.CreateJobReq) (domai
 				jobID,
 				personPath,
 				garmentPath,
+				req,
 			)
 
 		case "replicate":
@@ -98,9 +99,17 @@ func (s *Service) CreateJob(ctx context.Context, req domain.CreateJobReq) (domai
 	}, nil
 }
 
-func (s *Service) runFedjazVtonTryOn(ctx context.Context, jobID, personPath, garmentPath string) {
+func (s *Service) runFedjazVtonTryOn(ctx context.Context, jobID, personPath, garmentPath string, req domain.CreateJobReq) {
 
-	img, err := s.fc.PostTryOn(ctx, personPath, garmentPath)
+	img, err := s.fc.PostTryOn(ctx, domain.TryOnParams{
+		Description: req.Description,
+		Category:    req.Category,
+		Steps:       req.Steps,
+		Seed:        req.Seed,
+		Autocrop:    req.Autocrop,
+		Upscale:     req.Upscale,
+		Upscaler:    req.Upscaler,
+	}, personPath, garmentPath)
 	if err != nil {
 		s.st.UpdateJobStatus(jobID, domain.StatusFailed, "")
 		s.logger.Error("try-on failed", err)

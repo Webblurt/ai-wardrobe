@@ -14,6 +14,13 @@ func (h *Handler) postTryOn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	description := r.FormValue("description")
+	steps := parseInt(r.FormValue("steps"))
+	seed := parseInt(r.FormValue("seed"))
+	autocrop := parseBool(r.FormValue("autocrop"))
+	upscale := parseInt(r.FormValue("upscale"))
+	upscaler := r.FormValue("upscaler")
+
 	provider := r.FormValue("provider")
 	switch provider {
 	case "fedjaz", "replicate":
@@ -65,9 +72,15 @@ func (h *Handler) postTryOn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp, err := h.service.CreateJob(ctx, domain.CreateJobReq{
-		Provider: provider,
-		Category: category,
-		Fit:      fit,
+		Provider:    provider,
+		Description: description,
+		Category:    category,
+		Steps:       steps,
+		Seed:        seed,
+		Autocrop:    autocrop,
+		Upscale:     upscale,
+		Upscaler:    upscaler,
+
 		Person: domain.Image{
 			Data:        personData,
 			ContentType: personHeader.Header.Get("Content-Type"),

@@ -1,11 +1,14 @@
 package usecase
 
-import "context"
+import (
+	"ai-wardrobe/internal/wardrobe/domain"
+	"context"
+)
 
 type ReplicateClient interface {
 	PostTryOn(ctx context.Context, personURL, garmentURL string) (string, error)
 }
 
 type FedjazVtonClient interface {
-	PostTryOn(ctx context.Context, personPath, garmentPath string) ([]byte, error)
+	PostTryOn(ctx context.Context, params domain.TryOnParams, personPath, garmentPath string) ([]byte, error)
 }
