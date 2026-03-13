@@ -161,7 +161,7 @@ async function poll() {
   <div>
     <label>Provider</label>
     <select bind:value={provider}>
-      <option value="fedjaz">Fedjaz Default</option>
+      <!-- <option value="fedjaz">Fedjaz Default</option> -->
       <option value="fedjazfashnv15">Fedjaz FASHN v1.5</option>
       <option value="replicate">Replicate</option>
     </select>
